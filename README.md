@@ -15,7 +15,11 @@ Telegram - Exeos bot
 console.log(document.cookie.split('token=')[1].split(';')[0]);
   ```
 ## Configuration
-
+- **Exeos.py:** Modify the number of proxy allocated for each token on line 35
+  ```bash
+    self.total_ext = 10
+  ```
+  
 - **token.txt:** Make sure `token.txt` contains data that matches the format expected by the script. Here are examples of file formats:
   ```bash
     eyxx_1
