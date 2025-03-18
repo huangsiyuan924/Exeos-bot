@@ -179,7 +179,8 @@ class ExeOSBot:
 
                 status = response.json()['status']
                 if status == 'fail':
-                    await self.check_stats(token, extension_id, proxy)
+                    # await self.check_stats(token, extension_id, proxy)
+                    await self.connect_extension(token, extension_id, proxy)
                 self.log(f"{proxy} Liveness {status} for {extension_id}", log_type="LIVENESS")
                 await asyncio.sleep(30)
             except Exception as e:
