@@ -1,5 +1,5 @@
 # Exeos_bot
-Telegram - Exeos bot
+DEPIN - Exeos bot
 
 - Register Here : [EXEOS](https://app.exeos.network?referralCode=REFW4YWCHVI)
 - Use Code : REFW4YWCHVI
