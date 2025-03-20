@@ -262,7 +262,7 @@ class ExeOSBot:
 
         # while True:
         tasks = []
-        for account in accounts[:1]:
+        for account in accounts:
             token = account.get("token")
             if token:
                 tasks.append(self.process_accounts(token))
