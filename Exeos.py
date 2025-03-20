@@ -1,3 +1,4 @@
+import random
 import uuid
 
 from curl_cffi import requests
@@ -30,14 +31,12 @@ class ExeOSBot:
             "liveness_interval": 15000,
             "connect_interval": 60000,
         }
-        self.nodeId_list = []
-        self.email = None
-        self.total_ext = 137
+        # self.email = None
     def clear_terminal(self):
         os.system("cls" if os.name == "nt" else "clear")
 
     def log(self, message, account_index="", log_type="INFO"):
-        account_index = self.email
+        # account_index = self.email
         timestamp = datetime.now().astimezone(wib).strftime("%x %X %Z")
         colored_message = f"{Fore.CYAN}[{timestamp}]{Style.RESET_ALL} [{account_index}] "
 
@@ -83,7 +82,7 @@ class ExeOSBot:
             with open("proxies.txt", "r", encoding="utf-8") as file:
                 self.proxies = [line.strip() for line in file if line.strip()]
         self.log(f"Loaded {len(self.proxies)} proxies.")
-
+        self.total_ext = len(self.proxies)
     def get_next_proxy_for_account(self, token):
         if token not in self.account_proxies:
             if not self.proxies:
@@ -126,18 +125,18 @@ class ExeOSBot:
                     impersonate="safari15_5",
                 )
                 data = response.json().get("data", {})
-                self.email = data.get("email")
+                email = data.get("email")
                 points = data.get("points", 0)
-                self.nodeId_list = [node['nodeId'] for node in data['networkNodes']]
+
                 referral_points = data.get("referralPoints", 0)
                 self.log(
-                    f"Total Points: {points} | Referral Points: {referral_points}",
+                    f"Total Points: {points} | Referral Points: {referral_points}", account_index=email,
                     log_type="POINTS",
                 )
                 return data
             except Exception as e:
                 self.log(f"Failed to get account info: {e}", log_type="ERROR")
-            # return None
+        return None
 
     async def check_stats(self, token, extension_id, proxy=None):
         for i in range(3):
@@ -162,7 +161,9 @@ class ExeOSBot:
                 # return None
 
     async def check_liveness(self, token, extension_id, proxy=None):
+        await asyncio.sleep(random.randint(0, 30))
         await self.check_stats(token, extension_id, proxy)
+        await self.connect_extension(token, extension_id, proxy)
         while 1:
 
             try:
@@ -178,9 +179,12 @@ class ExeOSBot:
                 )
 
                 status = response.json()['status']
+                print(response.json())
                 if status == 'fail':
+                    # print(response.json())
                     # await self.check_stats(token, extension_id, proxy)
                     await self.connect_extension(token, extension_id, proxy)
+                    continue
                 self.log(f"{proxy} Liveness {status} for {extension_id}", log_type="LIVENESS")
                 await asyncio.sleep(30)
             except Exception as e:
@@ -212,20 +216,26 @@ class ExeOSBot:
 
         # ip = await self.get_public_ip(proxy)
         # if ip:
-        await self.check_account_info(token, proxy)
-        while len(self.nodeId_list) < self.total_ext:
+        while 1:
+            data = await self.check_account_info(token, proxy)
+            if data:
+                break
+        email = data.get("email")
+        nodeId_list = [node['nodeId'] for node in data['networkNodes']]
+        while len(nodeId_list) < self.total_ext:
             random_uuid = str(uuid.uuid4())
-            self.nodeId_list.append(f"node:ext:{random_uuid}")
-
+            nodeId_list.append(f"node:ext:{random_uuid}")
+        # print(email, nodeId_list)
         tasks = []
         for i in range(self.total_ext):
-            extension_id = self.nodeId_list[i]
+            extension_id = nodeId_list[i]
             if i == 0:
                 proxy = self.proxies[0]
             else:
                 proxy = self.rotate_proxy_for_account(token)
 
-            tasks.append(asyncio.create_task(self.connect_extension(token, extension_id, proxy)))
+            # await self.check_stats(token, extension_id, proxy)
+            # tasks.append(asyncio.create_task(self.connect_extension(token, extension_id, proxy)))
             tasks.append(asyncio.create_task(self.check_liveness(token, extension_id, proxy)))
         await asyncio.gather(*tasks)
                 # await self.connect_extension(token, extension_id, ip, proxy)
@@ -250,15 +260,15 @@ class ExeOSBot:
 
         self.log(f"Starting bot with {len(accounts)} accounts...")
 
-        while True:
-            for account in accounts:
-                token = account.get("token")
-                if token:
-                    await self.process_accounts(token)
-                    await asyncio.sleep(5)  # Delay between accounts
-
-            self.log("All accounts processed. Waiting for next cycle...")
-            await asyncio.sleep(60 * 60)  # Wait 1 hour before next cycle
+        # while True:
+        tasks = []
+        for account in accounts[:1]:
+            token = account.get("token")
+            if token:
+                tasks.append(self.process_accounts(token))
+        await asyncio.gather(*tasks)
+        self.log("All accounts processed. Waiting for next cycle...")
+            # await asyncio.sleep(60 * 60)  # Wait 1 hour before next cycle
 
 
 if __name__ == "__main__":
